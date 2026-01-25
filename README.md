@@ -1,4 +1,4 @@
-# Witcher 3 Settings Merger Tools (Beta v0.9.0)
+# Witcher 3 Settings Merger (Beta v0.9.0)
 
 Tired of manually copy-pasting lines into `input.settings`? This simple tool automates the process of adding custom inputs, user settings, and graphics options from your installed mods into *The Witcher 3*'s settings files. It is designed to be a companion to **Script Merger** and **Filelist Updater** to fill the final automation gap. Add it as a tool in **Vortex** and run whenever your modlist changes. That's it!
 
