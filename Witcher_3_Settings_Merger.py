@@ -639,7 +639,17 @@ class ConflictWindow(tk.Toplevel):
         
         # 5. Footer Buttons
         btn_frame = ttk.Frame(self)
-        btn_frame.pack(side="bottom", fill="x", pady=10, padx=10)
+        btn_frame.pack(side="bottom", fill="x", pady=15, padx=10) # Increased pady for visual separation
+
+        # Left: Bulk Tools
+        tools_frame = ttk.Frame(btn_frame)
+        tools_frame.pack(side="left")
+        
+        ttk.Button(tools_frame, text="Enable All", command=lambda: self.bulk_select("all"), width=12).pack(side="left", padx=2)
+        ttk.Button(tools_frame, text="Disable All", command=lambda: self.bulk_select("none"), width=12).pack(side="left", padx=2)
+        ttk.Button(tools_frame, text="Vanilla Only", command=lambda: self.bulk_select("vanilla"), width=12).pack(side="left", padx=2)
+
+        # Right: Confirm
         ttk.Button(btn_frame, text="Confirm Selection", command=self.on_confirm, style="Primary.TButton").pack(side="right")
         
         # 6. Final Setup
@@ -647,8 +657,6 @@ class ConflictWindow(tk.Toplevel):
         self.parent = parent
         
         self.after(10, lambda: apply_dark_title_bar(self))
-        apply_window_icon(self)
-        self.update_idletasks()
         apply_window_icon(self)
         self.update_idletasks()
         setup_popup_geometry(self, parent, mode="secondary")
@@ -899,6 +907,59 @@ class ConflictWindow(tk.Toplevel):
                  # Fallback? Maybe just user.settings format logic if we allowed it?
                  pass
 
+    def bulk_select(self, mode):
+        """
+        Bulk Toggle Logic:
+        - "all": Enables all checkboxes.
+        - "none": Disables all checkboxes.
+        - "vanilla": Enables ONLY options with "vanilla" in Source.
+        
+        Refined for Radio Buttons:
+        - Radios cannot have "multiple" selected.
+        - "all"/"none" mostly apply to Checkboxes (input.settings).
+        - "vanilla" works for Radios by selecting the Vanilla option if present.
+        """
+        for key_tuple, var in self.vars.items():
+            # key_tuple is (section, key, idx) for Checkboxes
+            # key_tuple is (section, key) for Radios
+            
+            # --- CHECKBOXES (input.settings) ---
+            if len(key_tuple) == 3:
+                section, key, idx = key_tuple
+                
+                # Retrieve Option Data
+                # We need to look up the source in self.conflicts
+                try:
+                    opt = self.conflicts[section][key][idx]
+                    source = opt['source'].lower()
+                except: continue
+
+                if mode == "all":
+                    var.set(True)
+                elif mode == "none":
+                    var.set(False)
+                elif mode == "vanilla":
+                    # True if vanilla, False otherwise
+                    is_vanilla = "vanilla" in source or "baseline" in source
+                    var.set(is_vanilla)
+
+            # --- RADIO BUTTONS (user.settings) ---
+            elif len(key_tuple) == 2:
+                section, key = key_tuple
+                
+                # var is an IntVar holding the INDEX
+                # We can't toggle "all" or "none" (must pick one).
+                # Only "vanilla" makes sense here.
+                
+                if mode == "vanilla":
+                    options = self.conflicts[section][key]
+                    # Find index of vanilla option
+                    for i, opt in enumerate(options):
+                        src = opt['source'].lower()
+                        if "vanilla" in src or "baseline" in src:
+                            var.set(i)
+                            break
+                            
     def on_confirm(self):
         # Compile results back into a clean list
         # We need to return: result[section] = [line, line...]
@@ -1772,7 +1833,6 @@ This software is made available under the GNU General Public License v3.0.
         text_widget.insert(tk.END, help_text)
         text_widget.configure(state='disabled')
         
-        # Position
         # Position
         help_win.update_idletasks() # Calc size
         setup_popup_geometry(help_win, self.root, mode="secondary")
