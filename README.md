@@ -69,5 +69,7 @@ The only issue I found in my own list was with *Brew With a View*, the user sett
 Copyright © 2026 Craeven/Tevarrus (handles). All Rights Reserved.
 
 Distribution: You are not allowed to upload this file to other sites without my express permission.
+
 Modification: You are not allowed to modify my files, improve them, or use assets from them without my express permission.
+
 Commercial Use: You are not allowed to use this file or its source code for any commercial purposes.
