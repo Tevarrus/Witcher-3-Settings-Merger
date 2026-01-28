@@ -162,70 +162,124 @@ def parse_ini_file(filepath):
     except: pass
     return data
 
+
+def parse_file_to_dict(filepath):
+    """
+    Returns a dict structure:
+    data[section] = [ {'line': raw_line, 'key': extracted_key} ]
+    """
+    data = {}
+    current_section = None
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                clean = line.strip()
+                if not clean or clean.startswith(';') or clean.startswith('//'): continue
+                
+                if clean.startswith('[') and clean.endswith(']'):
+                    if clean in IGNORED_SECTIONS:
+                        current_section = None
+                    else:
+                        current_section = clean
+                        if current_section not in data: data[current_section] = []
+                elif current_section:
+                    # extract key for comparison
+                    key_part = clean.split('=', 1)[0].strip()
+                    entry = {
+                        'line': clean,
+                        'key': key_part
+                    }
+                    data[current_section].append(entry)
+    except: pass
+    return data
+
 def merge_file(target_full_path, fragment_files):
     if not os.path.exists(target_full_path): 
         log(f"Skipped (Missing): {os.path.basename(target_full_path)}")
         return
     
-    # Auto-Create Baseline if missing (Safety for silent run)
+    file_name = os.path.basename(target_full_path)
+    
+    # Auto-Create Baseline if missing
     base_file = target_full_path + ".base"
     if not os.path.exists(base_file):
         shutil.copy2(target_full_path, base_file)
         log(f"Auto-Created Baseline: {os.path.basename(target_full_path)}")
 
-    file_name = os.path.basename(target_full_path)
-    existing_map = {}
-    current_section = None
-    with open(target_full_path, 'r', encoding='utf-8', errors='ignore') as f:
-        for line in f:
-            clean = line.strip()
-            if clean.startswith('[') and clean.endswith(']'):
-                current_section = clean
-                if current_section not in existing_map: existing_map[current_section] = set()
-            elif current_section and clean:
-                existing_map[current_section].add(clean)
-
-    new_entries = {}
-    total_added = 0
-    for fpath in fragment_files:
-        data = parse_ini_file(fpath)
-        for section, lines in data.items():
-            if section not in new_entries: new_entries[section] = []
-            known_lines = existing_map.get(section, set())
-            for line in lines:
-                if line not in known_lines and line not in new_entries[section]:
-                    new_entries[section].append(line)
-                    total_added += 1
-
-    if total_added == 0:
-        log(f"No new entries for {file_name}")
-        return
-
-    log(f"Injecting {total_added} lines into {file_name}")
+    # 1. Load Base
+    base_data = parse_file_to_dict(target_full_path)
     
-    final_output = []
-    with open(target_full_path, 'r', encoding='utf-8') as f:
-        current_section = None
-        for line in f:
-            clean_line = line.strip()
-            if clean_line.startswith('[') and clean_line.endswith(']'):
-                current_section = clean_line
-                final_output.append(line)
-                if current_section in new_entries:
-                    for new_val in new_entries[current_section]:
-                        final_output.append(f"{new_val}\n")
-                    del new_entries[current_section]
-            else:
-                final_output.append(line)
+    # 2. Load Fragments
+    mods_data = []
+    for fpath in fragment_files:
+        mods_data.append(parse_file_to_dict(fpath))
 
-    if new_entries:
-        for section, lines in new_entries.items():
-            final_output.append(f"\n{section}\n")
-            for line in lines:
-                final_output.append(f"{line}\n")
+    # 3. Smart Merge
+    # input.settings -> ALLOW duplicates (pure additive)
+    # user.settings -> REPLACE duplicates (last mod wins)
+    is_input_settings = "input.settings" in file_name.lower()
+    
+    final_map = {} # section -> key -> list of entries
+
+    def add_to_map(data_dict, allow_replace):
+        for section, entries in data_dict.items():
+            if section not in final_map: final_map[section] = {}
+            for entry in entries:
+                k = entry['key']
+                if k not in final_map[section]: final_map[section][k] = []
+                
+                # Logic Branch
+                if is_input_settings:
+                    # INPUT: Avoid exact duplicate lines, but allow same key
+                    exists = False
+                    for existing in final_map[section][k]:
+                        if existing['line'] == entry['line']: exists = True
+                    if not exists:
+                        final_map[section][k].append(entry)
+                else:
+                    # USER: Last writer wins for this key
+                    # If we are adding mods, we usually want to OVERWRITE the base
+                    if allow_replace:
+                        final_map[section][k] = [entry] # Replace entire list for this key
+                    else:
+                        # Initial Base Load or non-replace mode
+                        final_map[section][k].append(entry)
+
+    # Load Base (No replace yet)
+    add_to_map(base_data, allow_replace=False)
+    
+    # Load Mods (Replace enabled for user settings)
+    for m in mods_data:
+        add_to_map(m, allow_replace=not is_input_settings)
+
+    # 4. Write to Disk
+    output_lines = []
+    total_sections = 0
+    
+    # Alphabetical Sort for sections
+    for section in sorted(final_map.keys()):
+        total_sections += 1
+        output_lines.append(f"{section}\n")
+        # Alphabetical Sort for keys/lines
+        # Flatten the list of lists
+        all_entries = []
+        for k in final_map[section]:
+            all_entries.extend(final_map[section][k])
+            
+        # Optional: Sort lines? Usually better to keep specific order in INI?
+        # For safety in games, alphabetical is usually fine for settings, 
+        # but sometimes input order matters. We'll sort by Key to be clean.
+        all_entries.sort(key=lambda x: x['line'])
+        
+        for e in all_entries:
+            output_lines.append(f"{e['line']}\n")
+        output_lines.append("\n")
 
     with open(target_full_path, 'w', encoding='utf-8') as f:
-        f.writelines(final_output)
+        f.writelines(output_lines)
+    
+    log(f"Merged {len(fragment_files)} mods into {file_name} ({total_sections} sections)")
+
 
 def main():
     clear_log()
