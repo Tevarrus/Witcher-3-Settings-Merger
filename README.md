@@ -64,7 +64,7 @@ The program will look for any files with `user` or `input` combined with the phr
 
 The only issue I found in my own list was with *Brew With a View*, the user settings files for which were formatted in such a way that Vortex didn't want to deploy them until I removed the `.txt` suffix and then they deployed successfully (for some reason) and were then able to be found by **Settings Merger**. I assume this may happen with other mods so if you encounter import issues you should search `.settings` in your mod staging folder and ensure everything is deploying somewhere in the *Witcher 3* game folder with the above keywords in some orientation, then Settings Merger should find them and do its job.
 
-## LICENSE & PERMISSIONS
+## License & Permissions
 
 Copyright © 2026 Craeven (handle). All Rights Reserved.
 
