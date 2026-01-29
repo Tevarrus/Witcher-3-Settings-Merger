@@ -1,11 +1,13 @@
 # Witcher 3 Settings Merger (Beta v0.9.0)
 
-## 1. Purpose
+Jan 29, 2026 - Note: I'm currently trying to navigate the false positives of the file being misidentified as malware. I'm going to try releasing an unpackaged OneDir folder compile via Nuitka as that seems to greatly reduce the VirusTotal flags.
+
+## Purpose
 Tired of manually copy-pasting lines into `input.settings`? With multiple mods trying to add new keybinds or settings, it can be tedious to micromanage the game's configuration files. These files often become cluttered with actions from uninstalled mods, suffer from undesirable double-bound actions, or succumb to simple human error.
 
 **Witcher 3 Settings Merger** automates the process of adding custom inputs, user settings, and graphics options from your installed mods into *The Witcher 3*'s settings files and gives you a GUI to manage your choices. It is designed to be a companion to **Script Merger** and **Filelist Updater** to fill the final automation gap. 
 
-# 2. Core Functions & Features
+## Core Functions & Features
 * **Baseline Backup:** Creates a pristine snapshot (`.base`) of your settings. This allows you to experiment freely and always revert to a clean state.
 * **Auto-Detection:** Automatically attempts to find your Game Directory and Documents folder (checks Registry, Steam Library, and scans drives).
 * **Smart Auto-Merge:** Automatically detects and merges non-conflicting settings from all your installed mods. If only one mod changes a specific input, it is integrated automatically.
@@ -15,7 +17,7 @@ Tired of manually copy-pasting lines into `input.settings`? With multiple mods t
 * **Next-Gen Ready:** Updates `input.settings`, `user.settings`, and `dx12user.settings` simultaneously.
 * **Vortex Support:** Fully supports Vortex symlinks and hardlinks.
 
-## 3. Workflow Guide
+## Workflow Guide
 
 ### Step 1: Preparation
 1.  Ensure you have run the game at least once to generate your standard config files.
