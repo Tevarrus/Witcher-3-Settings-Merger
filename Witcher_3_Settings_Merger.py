@@ -19,9 +19,9 @@ except ImportError:
 # ================= RESOURCE PATH HELPER =================
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for Nuitka """
-    # Nuitka uses the folder of the executable for standalone builds
     if "__compiled__" in globals():
-        base_path = os.path.dirname(sys.argv[0])
+        # Nuitka OneFile: assets are in the temp folder with the script (__file__)
+        base_path = os.path.dirname(__file__)
     else:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
